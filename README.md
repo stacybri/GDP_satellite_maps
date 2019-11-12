@@ -1,5 +1,5 @@
 # GDP_satellite_maps
-This is some R code to produce maps of GDP/km^2 
+This is some R code to produce maps of GDP/km^2.  Example data is for the country of Peru.
 
 # Data downloaded from Here:
 https://datacatalog.worldbank.org/dataset/gross-domestic-product-2010 
