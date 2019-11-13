@@ -1,5 +1,7 @@
 # GDP_satellite_maps
-This is some R code to produce maps of GDP/km^2 
+This is some R code to produce maps of GDP/km^2.  Example data is for the country of Peru.  
+
+This is a personal project and should not be seen as an official World Bank project.
 
 This is example code to produce a raster map of the GDP per Square km using a World Bank raster map from DECRG.
 This could be useful for examining lack of resources for schools for the Global Education Policy Dashboard project
