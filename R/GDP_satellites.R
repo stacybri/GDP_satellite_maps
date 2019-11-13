@@ -44,26 +44,16 @@ summary(gdp_raster)
 #convert to dataframe for ggplot
 gdp_raster_df <- as.data.frame(gdp_raster, xy=TRUE)
 
-#create bins of GDP based on K-means clustering
-kmeans <- kmeans(gdp_raster_df$GDP, 100)
-
-gdp_raster_df$cluster <- as.factor(kmeans$cluster) 
-
-#create dataframe based on GDP centers from kmeans
-gdp_centers <- as.data.frame(kmeans$centers) %>%
-  mutate(cluster=as.factor(row.names(.))) %>%
-  rename(gdp_cluster=V1)
-
-#join the GDP kmeans data and drop GDP with zero (seems to usually be water areas or forest)
-gdp_raster_df <- gdp_raster_df %>%
-  left_join(gdp_centers) %>%
-  filter(GDP>0)
-
-#plot the GDP data
+###############################
+#plot the GDP data using ggplot
+###############################
 gdp_plot <- ggplot() +
-  geom_raster(data=gdp_raster_df, aes(x=x, y=y, fill=as.numeric(cluster))) +
-  scale_fill_gradient2() +
-  coord_quickmap()
+  geom_raster(data=gdp_raster_df, aes(x=x, y=y, 
+                                      fill=cut(GDP, breaks=c(0,5,10,20,30,40,50,100,10000000)))) +
+  scale_fill_brewer( palette='RdYlGn') +
+  labs(fill="GDP per Sq km") +
+  coord_quickmap() +
+  ggtitle("Columbia - 2010 - GDP per Square km")
 
 gdp_plot
 
@@ -81,8 +71,47 @@ pal <- colorBin("RdYlBu", domain = c(0,100000), bins=c(0,5,10,20,30,40,50,100,10
 
 gdp_leaflet <- leaflet() %>%
   addTiles() %>%
-  addRasterImage(gdp_raster, colors=pal, opacity=0.8) %>%
-  addLegend(pal=pal, values=values(gdp_raster), title="GDP per Square km")
+  addRasterImage(gdp_raster, colors=pal, opacity=0.4) %>%
+  addLegend(pal=pal, values=values(gdp_raster), title="GDP per Square km") 
 
 gdp_leaflet
 
+
+####################
+# Merge data to set of geo coordinates
+####################
+
+#create a random set of geo-codes plus a random variable to plot against
+df <- data.frame(
+  x = rnorm(n=25, mean=-72, sd=1),
+  y = rnorm(n=25, mean=5, sd=1),
+  regressor= rnorm(n=25, mean=0, sd=1)
+)
+
+# plot the data to see where the points are
+gdp_plot2 <- ggplot() +
+  geom_raster(data=gdp_raster_df, aes(x=x, y=y, 
+                                      fill=cut(GDP, breaks=c(0,5,10,20,30,40,50,100,10000000)))) +
+  geom_point(data=df, aes(x=x, y=y)) + 
+  scale_fill_brewer( palette='RdYlGn') +
+  labs(fill="GDP per Sq km") +
+  coord_quickmap() +
+  ggtitle("Columbia - 2010 - GDP per Square km")
+
+gdp_plot2
+
+# Now merge GDP data from satellites onto our made up data
+coordinates(df) <- c("x","y")
+
+df$GDP <- raster::extract(gdp_raster, df, 
+                  buffer=1000, # 1000m radius
+                  fun=mean,na.rm=T,
+                  method='simple')
+
+df <- as.data.frame(df) 
+#plot the GDP data against the regressor
+
+ggplot(data=df, aes(x=log(GDP), y=regressor)) +
+  geom_point() +
+  geom_smooth(method='lm') +
+  ggtitle('Plot of Regressor on GDP Measured Using Satellite Data')
